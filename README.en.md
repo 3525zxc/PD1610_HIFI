@@ -1,7 +1,7 @@
 # HifiCtl · HIFI Controller for PD1610
 
 > HIFI tuning tool for vivo Xplay6 (PD1610) on LineageOS 16 / Android 9.
-> Evolved from v1.0 to v2.4. Pure Java + native Views, no third-party dependencies,
+> Evolved from v1.0 to v2.5. Pure Java + native Views, no third-party dependencies,
 > no system partition modification, no flashing required.
 
 [简体中文 ←](README.md)
@@ -14,7 +14,7 @@ The ES9038 DAC in this old flagship works on LineageOS but never enters the HIFI
 This app flips the switch that **actually** engages HIFI in the HAL, and surfaces the
 hardware parameters read from the device tree:
 
-- **Control**: Off / HiFi / DSD modes, DSD volume (0–31), I2S clock rate.
+- **Control**: Off / HiFi / DSD modes, DSD volume (0–31), **audio tuning mode (RX HPH Mode: stock low-power / high-fidelity)**, I2S clock rate.
 - **Status**: device-tree DAC model/parameter table/headphone gain/impedance thresholds,
   plus the HAL's current-state readback.
 - **Settings**: continuous haptic strength (0–100%), mixer backup/restore, reset to
@@ -42,14 +42,15 @@ Signed builds from each stage are in `apk/`, ready to install:
 
 | Version | File | Notes |
 |---|---|---|
-| **v2.4** (recommended) | `apk/HifiCtl-v2.4.apk` | current: in-app update checker, versionCode 8 |
+| **v2.5** (recommended) | `apk/HifiCtl-v2.5.apk` | current: audio tuning mode + DSD memory, versionCode 9 |
+| v2.4 | `apk/HifiCtl-v2.4.apk` | in-app update checker, versionCode 8 |
 | v2.3 | `apk/HifiCtl-v2.3.apk` | four tabs + haptics + credits, versionCode 7 |
 | v1.2 | `apk/HifiCtl-v1.2.apk` | GLES refraction attempt (**deprecated**, crashes; archived only) |
 | v1.1-glass | `apk/HifiCtl-v1.1-glass.apk` | stable glass UI, three tabs, device-verified |
 | v1.0 | `apk/HifiCtl-v1.0.apk` | initial, parameter names guessed from `strings` (outdated) |
 
 ```bash
-adb install -r apk/HifiCtl-v2.4.apk
+adb install -r apk/HifiCtl-v2.5.apk
 ```
 
 ## Requirements & permissions
@@ -115,6 +116,7 @@ debug key, password `android`, development use only).
 | v2.0 | 11-17 22:00 | full rewrite: Wupp/WhatsApp dark theme, four tabs, haptics, confirm sheet, serialized HAL writes |
 | v2.3 | 11-17 22:28 | about-page credits and avatars |
 | v2.4 | 11-17 23:40 | in-app updates: local (in-panel download progress + root silent install) / browser (open releases); top-right check-frequency setting (daily default, off / every launch); downgrade guard |
+| v2.5 | 11-18 00:13 | audio tuning mode on the control page (RX HPH Mode: stock low-power CLS_H_LP / high-fidelity CLS_H_HIFI, takes effect instantly, restored at boot via Magisk service.d); fixed DSD falling back to HiFi after restart (remembers the last mode and labels it honestly) |
 
 ## Known limitations
 

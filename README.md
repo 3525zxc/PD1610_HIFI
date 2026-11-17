@@ -12,10 +12,10 @@
 一台老旗舰的 HIFI 芯片（ES9038 DAC）在 LineageOS 上"能出声但没走 HIFI 通路"。
 这个 APP 做的是**把 HAL 里那个真正生效的开关打开**，并把设备树里的硬件参数显示出来：
 
-- **控制**：Off / HiFi / DSD 模式切换、DSD 音量（0–31）、I2S 时钟档位
+- **控制**：Off / HiFi / DSD 模式切换、DSD 音量（0–31）、**音质档（耳放工作模式：官方省电 / 高保真）**、I2S 时钟档位
 - **状态**：读 device tree 的 DAC 型号/参数表/耳机增益/阻抗阈值，显示 HAL 回报的当前状态
 - **设置**：触感强度连续可调（0–100%）、mixer 备份/恢复、恢复默认值（需 root）
-- **关于**：常见问题、参数有效性结论、致谢
+- **关于**：常见问题、参数有效性结论、致谢、应用内版本更新
 
 关键结论（实机验证，不是看 `strings` 猜的）：
 
@@ -35,14 +35,15 @@
 
 | 版本 | 文件 | 说明 |
 |---|---|---|
-| **v2.4**（推荐） | `apk/HifiCtl-v2.4.apk` | 当前版：新增应用内版本更新，versionCode 8 |
+| **v2.5**（推荐） | `apk/HifiCtl-v2.5.apk` | 当前版：新增音质档（耳放工作模式）、DSD 档位记忆，versionCode 9 |
+| v2.4 | `apk/HifiCtl-v2.4.apk` | 应用内版本更新，versionCode 8 |
 | v2.3 | `apk/HifiCtl-v2.3.apk` | 四页签 + 触感 + 致谢，versionCode 7 |
 | v1.2 | `apk/HifiCtl-v1.2.apk` | GLES 折射尝试版（**已废弃**，会闪退，仅留档） |
 | v1.1-glass | `apk/HifiCtl-v1.1-glass.apk` | 玻璃态稳定版（三页签，已实机验证） |
 | v1.0 | `apk/HifiCtl-v1.0.apk` | 初版，参数名按 `strings` 推断（已过时） |
 
 ```bash
-adb install -r apk/HifiCtl-v2.4.apk
+adb install -r apk/HifiCtl-v2.5.apk
 ```
 
 ## 权限与前提
@@ -102,13 +103,16 @@ adb install -r out/HifiCtl.apk
 | v2.0 | 11-17 22:00 | 整体重构：Wupp/WhatsApp 深色系、四页签、触感可调、确认层、HAL 写串行化 |
 | v2.3 | 11-17 22:28 | 完善关于页致谢与头像 |
 | v2.4 | 11-17 23:40 | 关于页新增「版本更新」：本地更新（面板内下载进度 + root 静默安装）/ 浏览器更新（打开发布页）；右上角可设检查频率（默认每日一次，可关闭 / 每次打开）；降级保护 |
+| v2.5 | 11-18 00:13 | 控制页新增「音质档」（RX HPH Mode 两档：官方省电 CLS_H_LP / 高保真 CLS_H_HIFI，立即生效，Magisk service.d 开机自恢复）；修复 DSD 档重开后退回 HiFi 的显示问题（记住上次档位并如实标注） |
 
 ## 已知限制
 
-1. **DSD 档不可由参数触发**：`DSDEnable` 实测无效；需原生 DSD 输出播放器 + 真实 DSD 音源。
+1. **DSD 档不可由参数触发**：`DSDEnable` 实测无效；需原生 DSD 输出播放器 + 真实 DSD 音源。APP 会记住你选的 DSD 档并如实标注，但 HAL 里只有 `enable_hifi=1`。
 2. `dsdvol_index` / `hifi_i2s_clock_rate` 调用返回成功但 HAL 无 readback，实际音质影响未做双盲听测。
 3. HIFI ON 时耳机音量自动 +4 档（16→20），A/B 对比需先对齐响度，否则会把"更响"误判成"音质更好"。
 4. 切换 HIFI 后需重开播放才生效。
+5. **两版原厂固件的 HIFI 通路参数逐字节相同**（差异只是 MultiMedia3→8 等平台通路编号），不存在"两版调音"；能改变听感的是控制页「音质档」的耳放工作模式。
+6. 音质档依赖 Magisk 模块提供的 `tinymix`（`/data/adb/modules/audio_pd1610/tinymix`）；高保真档耗电略高。
 
 ## 许可
 

@@ -23,6 +23,7 @@ final class Icons {
     static final int CHEVRON = 5;
     static final int CHECK = 6;
     static final int DOT = 7;
+    static final int DOWNLOAD = 8;
 
     private Icons() {
     }
@@ -62,6 +63,9 @@ final class Icons {
                 break;
             case CHECK:
                 drawCheck(canvas, p);
+                break;
+            case DOWNLOAD:
+                drawDownload(canvas, p);
                 break;
             default:
                 p.setStyle(Paint.Style.FILL);
@@ -153,6 +157,26 @@ final class Icons {
         path.lineTo(10f, 17.5f);
         path.lineTo(19f, 6.5f);
         c.drawPath(path, p);
+    }
+
+    /** 向下箭头 + 底部托盘（版本更新） */
+    private static void drawDownload(Canvas c, Paint p) {
+        p.setStrokeWidth(2.2f);
+        Path arrow = new Path();
+        arrow.moveTo(12f, 3.5f);
+        arrow.lineTo(12f, 14f);
+        c.drawPath(arrow, p);
+        Path head = new Path();
+        head.moveTo(7.5f, 9.5f);
+        head.lineTo(12f, 14f);
+        head.lineTo(16.5f, 9.5f);
+        c.drawPath(head, p);
+        Path tray = new Path();
+        tray.moveTo(4.5f, 16.5f);
+        tray.lineTo(4.5f, 20f);
+        tray.lineTo(19.5f, 20f);
+        tray.lineTo(19.5f, 16.5f);
+        c.drawPath(tray, p);
     }
 
     // ---------------- 承载图标的小 View ----------------

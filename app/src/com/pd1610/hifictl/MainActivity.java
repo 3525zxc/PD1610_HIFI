@@ -90,6 +90,11 @@ public final class MainActivity extends Activity {
         if (Updates.shouldAutoCheck(this)) {
             Updates.check(this, (tag, url, notes, err) -> refreshUpdateDot());
         }
+
+        // 音质档自恢复：audioserver 重启后 codec 控件会回默认，启动时按用户选择重放一次
+        Haptics.IO.execute(() -> {
+            if (Tuning.saved(this) != Tuning.MODE_SAVE) Tuning.apply(this, Tuning.saved(this));
+        });
     }
 
     private void refreshUpdateDot() {
@@ -146,7 +151,7 @@ public final class MainActivity extends Activity {
         updateBtn.setBackground(w.ripple(Wds.RIPPLE, 24f));
         updateBtn.setClickable(true);
         Icons.Icon upIcon = new Icons.Icon(this);
-        upIcon.set(Icons.REFRESH, Wds.TEXT_2);
+        upIcon.set(Icons.DOWNLOAD, Wds.TEXT_2);
         updateBtn.addView(upIcon, new FrameLayout.LayoutParams(w.dp(24), w.dp(24), Gravity.CENTER));
         updateDot = new View(this);
         updateDot.setBackground(w.circle(Wds.GREEN));

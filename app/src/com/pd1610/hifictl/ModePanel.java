@@ -25,6 +25,9 @@ final class ModePanel {
 
     private static final String[] MODE_KEYS = {"off", "hifi", "dsd"};
     private static final String[] MODE_TITLES = {"Off", "HiFi", "DSD"};
+    /** 记住用户上次选的档：HAL 只有 enable_hifi 一个状态，DSD 档读回来会退化成 HiFi */
+    private static final String PREF = "ui";
+    private static final String KEY_MODE = "last_mode";
 
     private final Activity host;
     private final Wds w;
@@ -104,6 +107,15 @@ final class ModePanel {
                     }
                     return;
                 }
+                // DSD 档补偿：HAL 只有 enable_hifi=1，无法区分 HiFi / DSD。
+                // 若上次用户选的是 DSD 且现在是开，就显示 DSD 并如实标注，而不是退回 HiFi。
+                String last = host.getSharedPreferences(PREF, android.content.Context.MODE_PRIVATE).getString(KEY_MODE, "hifi");
+                if (idx == 1 && "dsd".equals(last)) {
+                    setHeadline(MODE_TITLES[2], Wds.WARN);
+                    seg.setSelectedIndex(2, false);
+                    setSub("DSD 档已选 · 参数已开，实际由音源触发");
+                    return;
+                }
                 setHeadline(MODE_TITLES[idx], Wds.GREEN_DEEP);
                 seg.setSelectedIndex(idx, false);
                 setSub("正在生效 · enable_hifi = " + state);
@@ -114,6 +126,8 @@ final class ModePanel {
     /** 外部（恢复默认）直接改状态：作废在途对账并更新 UI */
     void setMode(int index, boolean animate, String subText) {
         token++;
+        host.getSharedPreferences(PREF, android.content.Context.MODE_PRIVATE).edit()
+                .putString(KEY_MODE, MODE_KEYS[index]).apply();
         seg.setSelectedIndex(index, animate);
         setHeadline(MODE_TITLES[index], Wds.GREEN_DEEP);
         setSub(subText);
@@ -124,6 +138,7 @@ final class ModePanel {
     private void applyMode(int index) {
         final int myToken = ++token;
         final String mode = MODE_KEYS[index];
+        host.getSharedPreferences(PREF, android.content.Context.MODE_PRIVATE).edit().putString(KEY_MODE, mode).apply();
 
         setHeadline(MODE_TITLES[index], Wds.WARN);
         clearBanner();

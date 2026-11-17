@@ -112,8 +112,13 @@ final class AboutPage {
         mono(w, b, "1.15.1  (6.0.1)  118,532 B  3,145 行  @ /etc/");
         mono(w, b, "8.19.16 (8.1)    119,329 B  3,176 行  @ /vendor/etc/");
         w.gap(b, 8);
-        para(w, b, "差异 195 行，全为 MultiMedia8/9、EC Reference、HDMI 等通路扩展；"
-                + "HIFI 相关控件逐字节一致，因此两版可以共用同一套参数。");
+        para(w, b, "差异 195 行，全为 MultiMedia3/8 通路编号、EC Reference、HDMI 等平台扩展；"
+                + "headphone-hifi / headphone-hifi-DSD 两条通路逐字节一致，"
+                + "因此不存在「两版调音不同」这回事，两版可以共用同一套参数。");
+        w.gap(b, 8);
+        para(w, b, "真正能改变听感的是耳放工作模式（控制页「音质档」）：");
+        mono(w, b, "CLS_H_LP    官方默认 · 省电");
+        mono(w, b, "CLS_H_HIFI  耳放推满 · 耗电略高");
         w.gap(b, 8);
         mono(w, b, "HiFi Mode Switch        Off / HiFi / DSD");
         mono(w, b, "DSD SampleRate Switch   Off / On");

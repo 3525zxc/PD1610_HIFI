@@ -26,6 +26,8 @@ final class ControlPage {
     private final TextView dsdNote;
     private final Widgets.SegmentedControl clockSeg;
     private final TextView clockNote;
+    private final Widgets.SegmentedControl tuningSeg;
+    private final TextView tuningNote;
 
     ControlPage(Activity host, Wds w, HifiController ctl) {
         this.host = host;
@@ -82,6 +84,27 @@ final class ControlPage {
             }
         });
         view.addView(dsd, w.cardLp());
+
+        // ---- 分区：音质档（耳放工作模式）----
+        view.addView(Widgets.section(host, w, "音质档"));
+        LinearLayout tune = w.card();
+        tune.addView(w.text("耳放工作模式", Wds.SP_SECTION, Wds.TEXT_2, Wds.REG), w.lpw());
+        tuningSeg = new Widgets.SegmentedControl(host, w, Tuning.LABELS);
+        LinearLayout.LayoutParams tuneLp = new LinearLayout.LayoutParams(-1, w.dp(44));
+        tuneLp.topMargin = w.dp(12);
+        tune.addView(tuningSeg, tuneLp);
+        tuningSeg.setOnSegmentChangeListener((index, fromUser) -> {
+            if (fromUser) applyTuning(index);
+        });
+        // 读当前值：读不到就不预设，避免谎报
+        int curTune = Tuning.saved(host);
+        tuningSeg.setSelectedIndex(curTune, false);
+        tuningNote = w.caption("");
+        LinearLayout.LayoutParams tuneNoteLp = w.lpw();
+        tuneNoteLp.topMargin = w.dp(8);
+        tune.addView(tuningNote, tuneNoteLp);
+        refreshTuningNote(-1, curTune);
+        view.addView(tune, w.cardLp());
 
         // ---- 分区：I2S 时钟 ----
         view.addView(Widgets.section(host, w, "I2S 时钟"));
@@ -141,8 +164,45 @@ final class ControlPage {
         });
     }
 
-    private void applyClock(final int index) {
-        final int hz = CLOCK_HZ[index];
+    /** 应用音质档：写 codec 控件，立即生效（不需要重开播放） */
+    private void applyTuning(final int index) {
+        tuningNote.setTextColor(Wds.TEXT_3);
+        tuningNote.setText("正在切换…");
+        Haptics.IO.execute(() -> {
+            boolean ok = Tuning.apply(host, index);
+            if (ok) Tuning.syncBootScript(host);
+            final int read = ok ? Tuning.read() : -1;
+            host.runOnUiThread(() -> {
+                if (host.isFinishing() || host.isDestroyed()) return;
+                if (ok) {
+                    tuningSeg.setSelectedIndex(index, true);
+                    refreshTuningNote(read, index);
+                } else {
+                    tuningNote.setTextColor(Wds.DANGER);
+                    tuningNote.setText("切换失败：需要 root + Magisk 模块提供 tinymix · " + Wds.time());
+                    tuningSeg.setSelectedIndex(Tuning.saved(host), true);
+                }
+            });
+        });
+    }
+
+    private void refreshTuningNote(int readMode, int selected) {
+        String src = "耳放工作模式 RX HPH Mode";
+        if (readMode < 0) {
+            tuningNote.setTextColor(Wds.TEXT_3);
+            tuningNote.setText("已选「" + Tuning.LABELS[selected] + "」· " + src
+                    + " · 立即生效，参数在重启后由开机脚本恢复");
+        } else if (readMode == selected) {
+            tuningNote.setTextColor(Wds.TEXT_3);
+            tuningNote.setText("正在生效 · " + (selected == Tuning.MODE_HIFI ? "CLS_H_HIFI" : "CLS_H_LP")
+                    + " · 立即生效，已设置重启后自动恢复");
+        } else {
+            tuningNote.setTextColor(Wds.WARN);
+            tuningNote.setText("已写入但与回读不一致 · 当前 " + (readMode == Tuning.MODE_HIFI ? "高保真" : "省电"));
+        }
+    }
+
+    private void applyClock(final int index) {        final int hz = CLOCK_HZ[index];
         clockNote.setTextColor(Wds.TEXT_3);
         clockNote.setText("排队中…");
         Haptics.IO.execute(() -> {
@@ -174,6 +234,13 @@ final class ControlPage {
         clockSeg.clearSelection();
         clockNote.setTextColor(Wds.TEXT_3);
         clockNote.setText("已恢复默认 · 当前档位未读取");
+        tuningSeg.setSelectedIndex(Tuning.MODE_SAVE, true);
+        Haptics.IO.execute(() -> {
+            Tuning.apply(host, Tuning.MODE_SAVE);
+            Tuning.syncBootScript(host);
+        });
+        tuningNote.setTextColor(Wds.TEXT_3);
+        tuningNote.setText("已恢复官方省电档 · 立即生效");
         modePanel.setMode(0, true, "已恢复默认 · 重开播放后生效");
         modePanel.showBanner(Widgets.InlineBanner.OK,
                 "已恢复 Off / 音量 19 · 重开播放后生效", null, null);
