@@ -63,6 +63,11 @@ final class Updates {
         return c.getSharedPreferences(PREF, Context.MODE_PRIVATE).getString("url", "");
     }
 
+    /** API asset 直链：不经 github.com，国内网络可用 */
+    static String latestApiUrl(Context c) {
+        return c.getSharedPreferences(PREF, Context.MODE_PRIVATE).getString("api_url", "");
+    }
+
     static String latestNotes(Context c) {
         return c.getSharedPreferences(PREF, Context.MODE_PRIVATE).getString("notes", "");
     }
@@ -125,7 +130,7 @@ final class Updates {
     static void check(final Context ctx, final CheckCb cb) {
         final Context app = ctx.getApplicationContext();
         new Thread(() -> {
-            String tag = null, url = null, notes = "", err = null;
+            String tag = null, url = null, notes = "", err = null, apiUrl = "";
             HttpURLConnection cn = null;
             try {
                 cn = (HttpURLConnection) new URL(API_LATEST).openConnection();
@@ -146,11 +151,14 @@ final class Updates {
                         String name = a.optString("name", "");
                         if (name.endsWith(".apk")) {
                             url = a.optString("browser_download_url", "");
+                            // api.github.com 的 asset 地址会 302 到 objects.githubusercontent.com，
+                            // 国内 github.com 常被墙但 api 域通常可达
+                            apiUrl = a.optString("url", "");
                             break;
                         }
                     }
                 }
-                if (tag.isEmpty() || url.isEmpty()) {
+                if (tag.isEmpty() || (url.isEmpty() && apiUrl.isEmpty())) {
                     throw new java.io.IOException("响应缺少 tag 或 APK 地址");
                 }
             } catch (Throwable t) {
@@ -158,11 +166,12 @@ final class Updates {
             } finally {
                 if (cn != null) cn.disconnect();
             }
-            final String T = tag, U = url, N = notes, E = err;
+            final String T = tag, U = url, N = notes, E = err, A = apiUrl;
             if (E == null) {
                 app.getSharedPreferences(PREF, Context.MODE_PRIVATE).edit()
                         .putLong("last_check", System.currentTimeMillis())
-                        .putString("tag", T).putString("url", U).putString("notes", N).apply();
+                        .putString("tag", T).putString("url", U)
+                        .putString("api_url", A).putString("notes", N).apply();
             }
             new Handler(Looper.getMainLooper()).post(() -> cb.done(T, U, N, E));
         }, "hifictl-check").start();
@@ -190,6 +199,11 @@ final class Updates {
                 cn.setConnectTimeout(8000);
                 cn.setReadTimeout(20000);
                 cn.setRequestProperty("User-Agent", "HifiCtl-Updater");
+                // 走 api.github.com 的 asset 接口时必须是 octet-stream，否则返回 302/JSON
+                if (url.contains("api.github.com")) {
+                    cn.setRequestProperty("Accept", "application/octet-stream");
+                }
+                cn.setInstanceFollowRedirects(true);
                 int rc = cn.getResponseCode();
                 if (rc != 200) throw new java.io.IOException("HTTP " + rc);
                 final long total = cn.getContentLengthLong();
@@ -221,10 +235,18 @@ final class Updates {
         }, "hifictl-download").start();
     }
 
-    /** root 静默安装（设备为 Magisk 环境）；返回是否成功发出安装。 */
-    static boolean install(String path) {
-        RootShell.Result r = RootShell.run("pm install -r '" + path + "'");
-        return r.ok() && (r.out.contains("Success") || r.out.trim().isEmpty());
+    /** 后台静默安装（Magisk 环境）。
+     *
+     *  关键：安装本 APP 时 PackageManager 会杀掉当前进程，若安装是其子进程会被一起终止，
+     *  所以必须把 pm install 放到独立会话里延迟执行（setsid + sleep），让它在 APP 退出后继续跑。
+     *  返回是否成功把安装任务挂到后台。 */
+    static boolean installDetached(String path) {
+        String tmp = "/data/local/tmp/hifictl_update.apk";
+        String cmd = "cp -f '" + path + "' " + tmp + " && chmod 644 " + tmp
+                + " && setsid sh -c 'sleep 3; pm install -r " + tmp + "' >/dev/null 2>&1 &";
+        RootShell.Result r = RootShell.run(cmd);
+        android.util.Log.i("HifiCtlUpdate", "installDetached rc=" + r.code + " " + r.err);
+        return r.ok();
     }
 
     static void openBrowser(Activity a) {

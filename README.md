@@ -35,7 +35,10 @@
 
 | 版本 | 文件 | 说明 |
 |---|---|---|
-| **v2.5**（推荐） | `apk/HifiCtl-v2.5.apk` | 当前版：新增音质档（耳放工作模式）、DSD 档位记忆，versionCode 9 |
+| **v2.5.3**（推荐） | `apk/HifiCtl-v2.5.3.apk` | 当前版：音质档 + DSD 记忆 + 可用的应用内更新，versionCode 12 |
+| v2.5.2 | `apk/HifiCtl-v2.5.2.apk` | 同 v2.5.3（去调试日志前），versionCode 11 |
+| v2.5.1 | `apk/HifiCtl-v2.5.1.apk` | 修复更新面板按钮，versionCode 10 |
+| v2.5 | `apk/HifiCtl-v2.5.apk` | 音质档 + DSD 记忆，versionCode 9 |
 | v2.4 | `apk/HifiCtl-v2.4.apk` | 应用内版本更新，versionCode 8 |
 | v2.3 | `apk/HifiCtl-v2.3.apk` | 四页签 + 触感 + 致谢，versionCode 7 |
 | v1.2 | `apk/HifiCtl-v1.2.apk` | GLES 折射尝试版（**已废弃**，会闪退，仅留档） |
@@ -43,12 +46,12 @@
 | v1.0 | `apk/HifiCtl-v1.0.apk` | 初版，参数名按 `strings` 推断（已过时） |
 
 ```bash
-adb install -r apk/HifiCtl-v2.5.apk
+adb install -r apk/HifiCtl-v2.5.3.apk
 ```
 
 ## 权限与前提
 
-- **应用内更新**：关于页「检查更新」读取本仓库 Releases；「本地更新」在面板内显示下载进度并调用 root `pm install -r` 静默安装（需 Magisk），「浏览器更新」跳发布页手动装；右上角常驻更新按钮，发现新版本时圆点亮起，可设检查频率（关闭 / 每日一次 / 每次打开）。
+- **应用内更新**：关于页「检查更新」读取本仓库 Releases；「本地更新」在面板内显示下载进度并通过 root 后台静默安装（需 Magisk），**下载走 `api.github.com` 的 asset 接口，不需要能打开 github.com**；「浏览器更新」跳发布页，需要能打开 github.com（打不开请挂代理）。右上角常驻更新按钮，发现新版本时圆点亮起，可设检查频率（关闭 / 每日一次 / 每次打开）。
 - **不需要 root** 也能切 HIFI：只需 `MODIFY_AUDIO_SETTINGS`。
 - **需要 Magisk/root**：读 device tree、`/vendor/etc/` 下的 mixer 备份与恢复。首次启动会弹授权。
 - 目标机：Android 9 / API 28（`minSdk 27` / `targetSdk 28`），720×1280 起。
@@ -103,6 +106,9 @@ adb install -r out/HifiCtl.apk
 | v2.0 | 11-17 22:00 | 整体重构：Wupp/WhatsApp 深色系、四页签、触感可调、确认层、HAL 写串行化 |
 | v2.3 | 11-17 22:28 | 完善关于页致谢与头像 |
 | v2.4 | 11-17 23:40 | 关于页新增「版本更新」：本地更新（面板内下载进度 + root 静默安装）/ 浏览器更新（打开发布页）；右上角可设检查频率（默认每日一次，可关闭 / 每次打开）；降级保护 |
+| v2.5.3 | 11-18 00:32 | 修复应用内自动安装（setsid 独立会话，避免安装本 APP 时进程被杀导致中断）；本地更新走 api.github.com |
+| v2.5.2 | 11-18 00:28 | 合并 v2.5/v2.5.1 修复的正式版 |
+| v2.5.1 | 11-18 00:25 | 修复更新面板按钮 0 宽点不到；下载改走 API asset 接口 |
 | v2.5 | 11-18 00:13 | 控制页新增「音质档」（RX HPH Mode 两档：官方省电 CLS_H_LP / 高保真 CLS_H_HIFI，立即生效，Magisk service.d 开机自恢复）；修复 DSD 档重开后退回 HiFi 的显示问题（记住上次档位并如实标注） |
 
 ## 已知限制

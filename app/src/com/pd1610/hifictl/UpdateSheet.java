@@ -126,7 +126,6 @@ final class UpdateSheet {
         content.addView(status, w.lpw());
 
         LinearLayout actions = w.row();
-        w.gap(actions, 0);
         content.addView(actions, w.lpw());
 
         final UpdateSheet[] ref = new UpdateSheet[1];
@@ -142,6 +141,11 @@ final class UpdateSheet {
         LinearLayout.LayoutParams noteLp = w.lpw();
         noteLp.topMargin = w.dp(6);
         content.addView(note, noteLp);
+
+        TextView tip = w.caption("本地更新走 api.github.com（国内通常可用）；浏览器更新需能打开 github.com，打不开请挂代理");
+        LinearLayout.LayoutParams tipLp = w.lpw();
+        tipLp.topMargin = w.dp(8);
+        content.addView(tip, tipLp);
 
         // 渲染版本状态 + 两个操作按钮（检查完成后或已有缓存时）
         final Runnable render = () -> {
@@ -176,11 +180,13 @@ final class UpdateSheet {
     private static void doLocalUpdate(Activity a, Wds w, UpdateSheet sheet,
                                       LinearLayout actions, TextView status, TextView note) {
         if (sheet.dismissed) return;
-        String url = Updates.latestUrl(a);
+        String url = Updates.latestApiUrl(a);
+        if (url == null || url.isEmpty()) url = Updates.latestUrl(a);
         if (url == null || url.isEmpty()) {
             Toast.makeText(a, "还没有可用的下载地址，请先检查更新", Toast.LENGTH_SHORT).show();
             return;
         }
+        final String dlUrl = url;
         // 降级保护：发布页版本不比当前新时不执行本地安装
         String latest = Updates.latestTag(a);
         if (latest != null && !latest.isEmpty()
@@ -201,7 +207,7 @@ final class UpdateSheet {
         row.addView(pct);
         actions.addView(row, w.lpw());
 
-        Updates.download(a, url, new Updates.DlCb() {
+        Updates.download(a, dlUrl, new Updates.DlCb() {
             public void progress(int p, long done, long total) {
                 if (sheet.dismissed) return;
                 if (p >= 0) {
@@ -214,6 +220,13 @@ final class UpdateSheet {
             public void done(boolean ok, String pathOrError) {
                 if (sheet.dismissed) return;
                 if (!ok) {
+                    // API 通道失败时回退到 browser_download_url 再试一次
+                    String alt = Updates.latestUrl(a);
+                    if (alt != null && !alt.isEmpty() && !alt.equals(dlUrl)) {
+                        status.setText("API 通道失败，改用直链重试…");
+                        doLocalUpdateWith(a, w, sheet, actions, status, note, alt, false);
+                        return;
+                    }
                     status.setText("下载失败：" + pathOrError);
                     status.setTextColor(Wds.DANGER);
                     actions.removeAllViews();
@@ -222,13 +235,49 @@ final class UpdateSheet {
                 }
                 bar.set(100);
                 pct.setText("100%");
-                status.setText("下载完成，正在安装…");
+                status.setText("下载完成，3 秒后自动安装…");
                 status.setTextColor(Wds.GREEN);
-                boolean installed = Updates.install(pathOrError);
-                Toast.makeText(a, installed ? "安装完成，请重新打开 HIFI控制器" : "安装失败，请改用浏览器更新",
+                boolean queued = Updates.installDetached(pathOrError);
+                Toast.makeText(a, queued ? "即将安装，APP 会自动关闭，装完请重新打开"
+                                : "安装启动失败，请改用浏览器更新",
                         Toast.LENGTH_LONG).show();
-                if (installed) sheet.dismiss();
-                else {
+                if (queued) {
+                    new Handler(Looper.getMainLooper()).postDelayed(sheet::dismiss, 1200);
+                } else {
+                    actions.removeAllViews();
+                    actions.addView(ghostBtn(w, "浏览器更新", v -> Updates.openBrowser(a)));
+                }
+            }
+        });
+    }
+
+    /** 带指定 URL 的下载（回退用） */
+    private static void doLocalUpdateWith(Activity a, Wds w, UpdateSheet sheet, LinearLayout actions,
+                                          TextView status, TextView note, String url, boolean allowFallback) {
+        if (sheet.dismissed) return;
+        Updates.download(a, url, new Updates.DlCb() {
+            public void progress(int p, long done, long total) {
+                if (sheet.dismissed) return;
+                if (p >= 0) status.setText("正在下载（直链）… " + p + "%");
+            }
+            public void done(boolean ok, String pathOrError) {
+                if (sheet.dismissed) return;
+                if (!ok) {
+                    status.setText("下载失败：" + pathOrError);
+                    status.setTextColor(Wds.DANGER);
+                    actions.removeAllViews();
+                    actions.addView(ghostBtn(w, "浏览器更新", v -> Updates.openBrowser(a)));
+                    return;
+                }
+                status.setText("下载完成，3 秒后自动安装…");
+                status.setTextColor(Wds.GREEN);
+                boolean queued = Updates.installDetached(pathOrError);
+                Toast.makeText(a, queued ? "即将安装，APP 会自动关闭，装完请重新打开"
+                                : "安装启动失败，请改用浏览器更新",
+                        Toast.LENGTH_LONG).show();
+                if (queued) {
+                    new Handler(Looper.getMainLooper()).postDelayed(sheet::dismiss, 1200);
+                } else {
                     actions.removeAllViews();
                     actions.addView(ghostBtn(w, "浏览器更新", v -> Updates.openBrowser(a)));
                 }

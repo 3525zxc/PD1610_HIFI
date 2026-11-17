@@ -1,7 +1,7 @@
 # HifiCtl · HIFI Controller for PD1610
 
 > HIFI tuning tool for vivo Xplay6 (PD1610) on LineageOS 16 / Android 9.
-> Evolved from v1.0 to v2.5. Pure Java + native Views, no third-party dependencies,
+> Evolved from v1.0 to v2.5.3. Pure Java + native Views, no third-party dependencies,
 > no system partition modification, no flashing required.
 
 [简体中文 ←](README.md)
@@ -42,7 +42,8 @@ Signed builds from each stage are in `apk/`, ready to install:
 
 | Version | File | Notes |
 |---|---|---|
-| **v2.5** (recommended) | `apk/HifiCtl-v2.5.apk` | current: audio tuning mode + DSD memory, versionCode 9 |
+| **v2.5.3** (recommended) | `apk/HifiCtl-v2.5.3.apk` | current: tuning mode + DSD memory + working in-app update, versionCode 12 |
+| v2.5 | `apk/HifiCtl-v2.5.apk` | audio tuning mode + DSD memory, versionCode 9 |
 | v2.4 | `apk/HifiCtl-v2.4.apk` | in-app update checker, versionCode 8 |
 | v2.3 | `apk/HifiCtl-v2.3.apk` | four tabs + haptics + credits, versionCode 7 |
 | v1.2 | `apk/HifiCtl-v1.2.apk` | GLES refraction attempt (**deprecated**, crashes; archived only) |
@@ -50,7 +51,7 @@ Signed builds from each stage are in `apk/`, ready to install:
 | v1.0 | `apk/HifiCtl-v1.0.apk` | initial, parameter names guessed from `strings` (outdated) |
 
 ```bash
-adb install -r apk/HifiCtl-v2.5.apk
+adb install -r apk/HifiCtl-v2.5.3.apk
 ```
 
 ## Requirements & permissions
