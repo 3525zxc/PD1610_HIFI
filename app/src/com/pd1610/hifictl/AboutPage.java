@@ -20,7 +20,7 @@ final class AboutPage {
         // ---- 品牌块 ----
         LinearLayout brand = w.card();
         brand.addView(w.title("HIFI控制器"), w.lpw());
-        TextView ver = w.body("v2.3 · com.pd1610.hifictl");
+        TextView ver = w.body("v" + Updates.currentVersion(host) + " · com.pd1610.hifictl");
         LinearLayout.LayoutParams verLp = w.lpw();
         verLp.topMargin = w.dp(4);
         brand.addView(ver, verLp);
@@ -29,6 +29,23 @@ final class AboutPage {
         descLp.topMargin = w.dp(4);
         brand.addView(desc, descLp);
         page.addView(brand, w.cardLp());
+
+        // ---- 版本更新入口 ----
+        page.addView(Widgets.section(host, w, "版本更新"));
+        LinearLayout updCard = w.cardBleed();
+        Rows.ListRow upd = new Rows.ListRow(host, w)
+                .title("检查更新")
+                .subtitle("当前 v" + Updates.currentVersion(host)
+                        + (Updates.hasUpdate(host) ? " · 发现新版本 " + Updates.latestTag(host) : " · 已是最新"))
+                .dot(Updates.hasUpdate(host) ? Wds.GREEN : Wds.GREEN_DEEP)
+                .chevron();
+        upd.setClickable(true);
+        upd.setOnClickListener(v -> {
+            Haptics.tap(v);
+            UpdateSheet.showUpdate(host, w);
+        });
+        updCard.addView(upd, w.lpw());
+        page.addView(updCard, w.cardLp());
 
         // ---- 常见问题 ----
         page.addView(Widgets.section(host, w, "常见问题"));

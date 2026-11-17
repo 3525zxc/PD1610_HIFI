@@ -35,17 +35,19 @@
 
 | 版本 | 文件 | 说明 |
 |---|---|---|
-| **v2.3**（推荐） | `apk/HifiCtl-v2.3.apk` | 当前版，四页签 + 触感 + 致谢，versionCode 7 |
+| **v2.4**（推荐） | `apk/HifiCtl-v2.4.apk` | 当前版：新增应用内版本更新，versionCode 8 |
+| v2.3 | `apk/HifiCtl-v2.3.apk` | 四页签 + 触感 + 致谢，versionCode 7 |
 | v1.2 | `apk/HifiCtl-v1.2.apk` | GLES 折射尝试版（**已废弃**，会闪退，仅留档） |
 | v1.1-glass | `apk/HifiCtl-v1.1-glass.apk` | 玻璃态稳定版（三页签，已实机验证） |
 | v1.0 | `apk/HifiCtl-v1.0.apk` | 初版，参数名按 `strings` 推断（已过时） |
 
 ```bash
-adb install -r apk/HifiCtl-v2.3.apk
+adb install -r apk/HifiCtl-v2.4.apk
 ```
 
 ## 权限与前提
 
+- **应用内更新**：关于页「检查更新」读取本仓库 Releases；「本地更新」在面板内显示下载进度并调用 root `pm install -r` 静默安装（需 Magisk），「浏览器更新」跳发布页手动装；右上角常驻更新按钮，发现新版本时圆点亮起，可设检查频率（关闭 / 每日一次 / 每次打开）。
 - **不需要 root** 也能切 HIFI：只需 `MODIFY_AUDIO_SETTINGS`。
 - **需要 Magisk/root**：读 device tree、`/vendor/etc/` 下的 mixer 备份与恢复。首次启动会弹授权。
 - 目标机：Android 9 / API 28（`minSdk 27` / `targetSdk 28`），720×1280 起。
@@ -98,7 +100,8 @@ adb install -r out/HifiCtl.apk
 | v1.1-glass | 11-17 13:15 | 修正为 `enable_hifi`，玻璃态 UI，实机三页验证通过 |
 | v1.2 | 11-17 18:05 | GLES 折射 + 底部导航尝试 → **闪退，废弃** |
 | v2.0 | 11-17 22:00 | 整体重构：Wupp/WhatsApp 深色系、四页签、触感可调、确认层、HAL 写串行化 |
-| v2.3 | 11-17 22:28 | 当前版：完善关于页致谢与头像 |
+| v2.3 | 11-17 22:28 | 完善关于页致谢与头像 |
+| v2.4 | 11-17 23:40 | 关于页新增「版本更新」：本地更新（面板内下载进度 + root 静默安装）/ 浏览器更新（打开发布页）；右上角可设检查频率（默认每日一次，可关闭 / 每次打开）；降级保护 |
 
 ## 已知限制
 

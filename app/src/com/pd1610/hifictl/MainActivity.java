@@ -42,6 +42,9 @@ public final class MainActivity extends Activity {
     private View badgeDot;
     private TextView badgeText;
     private FrameLayout refreshBtn;
+    private FrameLayout updateBtn;
+    private View updateDot;
+    private UpdateSheet updateSettingsSheet;
     private int page = TAB_CONTROL;
 
     @Override
@@ -82,6 +85,18 @@ public final class MainActivity extends Activity {
         int saved = getSharedPreferences(PREF, MODE_PRIVATE).getInt("last_page", TAB_CONTROL);
         selectTab(saved, false);
         controlPage.refreshMode();
+
+        // 按用户设置的频率自动检查更新；发现新版本时点亮右上角圆点
+        if (Updates.shouldAutoCheck(this)) {
+            Updates.check(this, (tag, url, notes, err) -> refreshUpdateDot());
+        }
+    }
+
+    private void refreshUpdateDot() {
+        if (updateDot == null) return;
+        boolean has = Updates.hasUpdate(this);
+        updateDot.setVisibility(has ? View.VISIBLE : View.GONE);
+        updateBtn.setContentDescription(has ? "有可用更新" : "更新检查设置");
     }
 
     // ============================================================
@@ -126,6 +141,25 @@ public final class MainActivity extends Activity {
             statusPage.remeasure();
         });
 
+        // 右上角常驻：更新检查设置（有新版本时圆点亮起）
+        updateBtn = new FrameLayout(this);
+        updateBtn.setBackground(w.ripple(Wds.RIPPLE, 24f));
+        updateBtn.setClickable(true);
+        Icons.Icon upIcon = new Icons.Icon(this);
+        upIcon.set(Icons.REFRESH, Wds.TEXT_2);
+        updateBtn.addView(upIcon, new FrameLayout.LayoutParams(w.dp(24), w.dp(24), Gravity.CENTER));
+        updateDot = new View(this);
+        updateDot.setBackground(w.circle(Wds.GREEN));
+        FrameLayout.LayoutParams dotLp = new FrameLayout.LayoutParams(w.dp(7), w.dp(7),
+                Gravity.TOP | Gravity.RIGHT);
+        dotLp.topMargin = w.dp(6);
+        dotLp.rightMargin = w.dp(6);
+        updateBtn.addView(updateDot, dotLp);
+        updateBtn.setOnClickListener(v -> {
+            Haptics.tap(v);
+            updateSettingsSheet = UpdateSheet.showSettings(this, w, this::refreshUpdateDot);
+        });
+
         View line = new View(this);
         line.setBackgroundColor(Wds.HAIRLINE);
         bar.addView(line, new FrameLayout.LayoutParams(-1, Math.max(1, w.dp(1)), Gravity.BOTTOM));
@@ -146,6 +180,9 @@ public final class MainActivity extends Activity {
         } else if (tab == TAB_STATUS) {
             appBarRight.addView(refreshBtn, new LinearLayout.LayoutParams(w.dp(Wds.TOUCH), w.dp(Wds.TOUCH)));
         }
+        // 更新按钮：四页常驻，始终在最右
+        appBarRight.addView(updateBtn, new LinearLayout.LayoutParams(w.dp(Wds.TOUCH), w.dp(Wds.TOUCH)));
+        refreshUpdateDot();
     }
 
     // ============================================================
@@ -217,6 +254,10 @@ public final class MainActivity extends Activity {
 
     @Override
     public void onBackPressed() {
+        if (updateSettingsSheet != null && updateSettingsSheet.isShowing()) {
+            updateSettingsSheet.dismiss();
+            return;
+        }
         if (settingsPage != null && settingsPage.dismissSheet()) return;
         if (page != TAB_CONTROL) {
             selectTab(TAB_CONTROL, true);

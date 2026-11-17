@@ -1,7 +1,7 @@
 # HifiCtl · HIFI Controller for PD1610
 
 > HIFI tuning tool for vivo Xplay6 (PD1610) on LineageOS 16 / Android 9.
-> Evolved from v1.0 to v2.3. Pure Java + native Views, no third-party dependencies,
+> Evolved from v1.0 to v2.4. Pure Java + native Views, no third-party dependencies,
 > no system partition modification, no flashing required.
 
 [简体中文 ←](README.md)
@@ -42,17 +42,22 @@ Signed builds from each stage are in `apk/`, ready to install:
 
 | Version | File | Notes |
 |---|---|---|
-| **v2.3** (recommended) | `apk/HifiCtl-v2.3.apk` | current, four tabs + haptics + credits, versionCode 7 |
+| **v2.4** (recommended) | `apk/HifiCtl-v2.4.apk` | current: in-app update checker, versionCode 8 |
+| v2.3 | `apk/HifiCtl-v2.3.apk` | four tabs + haptics + credits, versionCode 7 |
 | v1.2 | `apk/HifiCtl-v1.2.apk` | GLES refraction attempt (**deprecated**, crashes; archived only) |
 | v1.1-glass | `apk/HifiCtl-v1.1-glass.apk` | stable glass UI, three tabs, device-verified |
 | v1.0 | `apk/HifiCtl-v1.0.apk` | initial, parameter names guessed from `strings` (outdated) |
 
 ```bash
-adb install -r apk/HifiCtl-v2.3.apk
+adb install -r apk/HifiCtl-v2.4.apk
 ```
 
 ## Requirements & permissions
 
+- **In-app updates**: About → Check for updates reads this repo's Releases. "Local" shows
+  download progress in-panel and installs via root `pm install -r` (Magisk); "Browser" opens
+  the releases page. A top-right button lights up when a newer version exists; check frequency
+  is configurable (off / daily default / every launch).
 - **No root needed** to toggle HIFI: only `MODIFY_AUDIO_SETTINGS`.
 - **Root/Magisk needed** for device-tree reads and mixer backup/restore under
   `/vendor/etc/`. First launch triggers a su prompt.
@@ -108,7 +113,8 @@ debug key, password `android`, development use only).
 | v1.1-glass | 11-17 13:15 | corrected to `enable_hifi`, glass UI, device-verified |
 | v1.2 | 11-17 18:05 | GLES refraction + bottom nav attempt → **crashes, deprecated** |
 | v2.0 | 11-17 22:00 | full rewrite: Wupp/WhatsApp dark theme, four tabs, haptics, confirm sheet, serialized HAL writes |
-| v2.3 | 11-17 22:28 | current: about-page credits and avatars |
+| v2.3 | 11-17 22:28 | about-page credits and avatars |
+| v2.4 | 11-17 23:40 | in-app updates: local (in-panel download progress + root silent install) / browser (open releases); top-right check-frequency setting (daily default, off / every launch); downgrade guard |
 
 ## Known limitations
 
