@@ -17,7 +17,7 @@ import android.widget.TextView;
 
 /**
  * v2.0 基础控件：分区标题、分段控件、卡内结果条、忙碌按钮。
- * （底部导航在 {@link BottomNav}，列表行与折叠组在 {@link Rows}。）
+ * （底部导航在 {@link GlassBar}，列表行与折叠组在 {@link Rows}。）
  */
 final class Widgets {
 

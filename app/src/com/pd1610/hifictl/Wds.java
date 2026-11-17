@@ -59,6 +59,28 @@ final class Wds {
     static final int RIPPLE = 0x1FFFFFFF;
     static final int RIPPLE_DARK = 0x33000000;
 
+    // ---------------- 1.1b 液态玻璃令牌（glass 分支） ----------------
+    // 只服务 GlassBar / Backdrop，上面 1.1 的平面版色板一个都不动。
+
+    /** 玻璃着色：深青黑 @ 42%，模糊层之上压这一层才够「厚」 */
+    static final int GLASS_TINT = 0x6B0E1A22;
+    /** 顶部高光起点（往下渐隐到全透明） */
+    static final int GLASS_HI_TOP = 0x1FFFFFFF;
+    /** 1dp 内描边：上缘更亮 */
+    static final int GLASS_EDGE_TOP = 0x47FFFFFF;
+    /** 1dp 内描边：其余三边 */
+    static final int GLASS_EDGE = 0x1FFFFFFF;
+    /** 选中药丸填充：#25D366 @ 15% */
+    static final int GLASS_PILL = 0x2625D366;
+    /** 选中药丸描边：#25D366 @ 40% */
+    static final int GLASS_PILL_EDGE = 0x6625D366;
+    /** 玻璃上的强调色（比 GREEN_DEEP 亮一档，半透明底上更跳） */
+    static final int GLASS_ACCENT = 0xFF22E39A;
+    /** 玻璃上的未选中色（比 TEXT_2 亮，半透明底上更清晰） */
+    static final int GLASS_IDLE = 0xFF9FB0B8;
+    /** 内容底部留白(dp)：64 栏高 + 12 底边距 + 12 呼吸 + 8 余量 */
+    static final int NAV_INSET = 96;
+
     // ---------------- 1.2 字体阶梯 ----------------
 
     static final float SP_HERO = 32f;
