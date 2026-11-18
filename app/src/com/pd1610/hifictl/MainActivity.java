@@ -47,6 +47,7 @@ public final class MainActivity extends Activity {
 
     private final FrameLayout[] panes = new FrameLayout[4];
     private GlassBar glassBar;
+    private GlassLens lensView;
     private View scrollTree;
     private ViewTreeObserver.OnScrollChangedListener scrollSpy;
     private TextView appBarTitle;
@@ -109,10 +110,16 @@ public final class MainActivity extends Activity {
         barLp.bottomMargin = w.dp(BAR_BOTTOM);
         root.addView(glassBar, barLp);
 
+        // 长按浮起的放大镜：与栏同级、盖在栏之上。自身不可点，触摸事件穿透给它下面的栏
+        lensView = new GlassLens(this, w);
+        root.addView(lensView, new FrameLayout.LayoutParams(-1, -1));
+        glassBar.attachLens(lensView);
+
         setContentView(root);
 
         // 让栏知道去模糊谁，并在任意 pane 滚动时补快照
         glassBar.attachContent(content);
+        lensView.attachSource(content);
         watchScroll(content);
 
         controlPage.modePanel().setStatusListener(this::onModeStatus);
@@ -331,6 +338,7 @@ public final class MainActivity extends Activity {
             scrollTree = null;
         }
         if (glassBar != null) glassBar.release();
+        if (lensView != null) lensView.releaseAll();
         for (FrameLayout pane : panes) {
             if (pane != null) pane.animate().cancel();
         }

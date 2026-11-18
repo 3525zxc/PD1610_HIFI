@@ -11,8 +11,11 @@ import android.graphics.Paint;
 import android.graphics.Rect;
 import android.graphics.RectF;
 import android.graphics.Shader;
-import android.view.Gravity;
+import android.graphics.drawable.Drawable;
+import android.graphics.drawable.RippleDrawable;
+import android.view.Gravity;import android.view.MotionEvent;
 import android.view.View;
+import android.view.ViewConfiguration;
 import android.view.ViewOutlineProvider;
 import android.widget.FrameLayout;
 import android.widget.LinearLayout;
@@ -57,15 +60,19 @@ final class GlassBar extends LinearLayout {
     private static final int ICON_SIZE = 24;
     private static final int LABEL_GAP = 3;
     private static final float LABEL_SP = 11f;
+    /** 长按唤起放大镜的判定时长 */
+    private static final int LONG_PRESS_MS = 320;
 
     private final Wds w;
     private final float radius;
     private final float strokeW;
 
+    private final LinearLayout[] items;
+    private final FrameLayout[] slots;
     private final FrameLayout[] pills;
     private final Icons.Icon[] icons;
     private final TextView[] labels;
-
+    private final int[] tabIcons;
     private final Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Paint shaderPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final RectF rect = new RectF();
@@ -90,26 +97,61 @@ final class GlassBar extends LinearLayout {
     /** 待模糊的内容视图（与栏同级、铺满窗口的那一层） */
     private View contentView;
 
+    // ---------------- 长按放大镜 ----------------
+
+    /** 浮起的圆镜，由 MainActivity 注入（与栏同级、盖在栏上） */
+    private GlassLens lens;
+    private final int touchSlop;
+    /** 手指按下的那一项（-1 = 按在空白处） */
+    private int downIndex = -1;
+    private float downX;
+    private float downY;
+    /** 长按计时器还挂着 */
+    private boolean armed;
+    /** 圆镜已接管手势 */
+    private boolean lensActive;
+    /** 圆镜当前悬停的项 */
+    private int lensIndex = -1;
+    /** 被圆镜接管的项：它的药丸与图标让位给镜子，避免同一位置画两遍 */
+    private int hiddenPill = -1;
+    /** 手势开始时选中的项，用于 CANCEL 回滚 */
+    private int selectedBefore;
+
+    private final Runnable longPress = new Runnable() {
+        @Override
+        public void run() {
+            if (!armed) return;
+            armed = false;
+            if (downIndex < 0 || lens == null) return;
+            startLens(downIndex);
+        }
+    };
+
     GlassBar(Context c, Wds w, int[] iconIds, String[] names) {
         super(c);
         this.w = w;
         this.radius = w.dpf(R_BAR);
         this.strokeW = Math.max(1f, w.dpf(1f));
         this.backdrop = new Backdrop(c);
+        this.touchSlop = ViewConfiguration.get(c).getScaledTouchSlop();
 
         setOrientation(HORIZONTAL);
         setGravity(Gravity.CENTER_VERTICAL);
         // ViewGroup 默认 willNotDraw=true，自绘背景必须显式打开
         setWillNotDraw(false);
         setClipToOutline(false);
+        // 触控由栏自己处理：长按后要连续跟踪手指，交给子项 click 拿不到 MOVE
+        setClickable(true);
 
         int n = names.length;
+        items = new LinearLayout[n];
+        slots = new FrameLayout[n];
         pills = new FrameLayout[n];
         icons = new Icons.Icon[n];
         labels = new TextView[n];
+        tabIcons = iconIds;
 
         for (int i = 0; i < n; i++) {
-            final int idx = i;
             LinearLayout item = new LinearLayout(c);
             item.setOrientation(VERTICAL);
             item.setGravity(Gravity.CENTER);
@@ -135,21 +177,14 @@ final class GlassBar extends LinearLayout {
             labelLp.topMargin = w.dp(LABEL_GAP);
             item.addView(label, labelLp);
 
-            // 整项热区：宽 = 栏宽/4，高 = 栏高 64dp，远大于 48dp
+            // 整项热区：宽 = 栏宽/4，高 = 栏高 64dp，远大于 48dp。
+            // 不设 clickable —— 触摸统一走 GlassBar.onTouchEvent，波纹靠手动 setPressed 驱动
             item.setBackground(w.ripple(RIPPLE, Wds.R_PILL));
-            item.setClickable(true);
-            item.setFocusable(true);
-            item.setOnClickListener(new OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    Haptics.tap(v);
-                    if (idx == selected) return;
-                    setSelected(idx, true);
-                    if (listener != null) listener.onTabSelected(idx);
-                }
-            });
+            item.setContentDescription(names[i]);
             addView(item, new LinearLayout.LayoutParams(0, -1, 1f));
 
+            items[i] = item;
+            slots[i] = slot;
             pills[i] = pill;
             icons[i] = icon;
             labels[i] = label;
@@ -196,6 +231,11 @@ final class GlassBar extends LinearLayout {
         contentView = content;
         backdrop.setSource(content);
         syncRegion();
+    }
+
+    /** 注入长按浮起的圆镜（与栏同级、盖在栏上） */
+    void attachLens(GlassLens l) {
+        lens = l;
     }
 
     /** 切换选中项：药丸 alpha/scale 180ms 过渡，图标文字直接换色 */
@@ -353,9 +393,15 @@ final class GlassBar extends LinearLayout {
     private void applySelection(boolean animate) {
         for (int i = 0; i < pills.length; i++) {
             boolean sel = i == selected;
+            // 被圆镜接管的项：药丸和图标都让位给镜子，否则同一位置会画两遍
+            boolean hidden = i == hiddenPill;
             FrameLayout pill = pills[i];
             pill.animate().cancel();
-            if (animate) {
+            if (hidden) {
+                pill.setAlpha(0f);
+                pill.setScaleX(PILL_SCALE_IDLE);
+                pill.setScaleY(PILL_SCALE_IDLE);
+            } else if (animate) {
                 pill.animate()
                         .alpha(sel ? 1f : 0f)
                         .scaleX(sel ? 1f : PILL_SCALE_IDLE)
@@ -369,7 +415,174 @@ final class GlassBar extends LinearLayout {
             }
             int color = sel ? Wds.GLASS_ACCENT : Wds.GLASS_IDLE;
             icons[i].setColor(color);
+            // 图标与文字都让位：镜子正罩在这一项上，两套东西会打架
+            icons[i].setAlpha(hidden ? 0f : 1f);
             labels[i].setTextColor(color);
+            labels[i].setAlpha(hidden ? 0f : 1f);
         }
+    }
+
+    // ============================================================
+    // 触摸：点按 = 切页；长按 = 浮起圆镜，拖动跟手，松手落位
+    // ============================================================
+
+    @Override
+    public boolean onTouchEvent(MotionEvent e) {
+        switch (e.getActionMasked()) {
+            case MotionEvent.ACTION_DOWN:
+                arm(e.getX(), e.getY());
+                return true;
+
+            case MotionEvent.ACTION_MOVE:
+                if (lensActive) {
+                    moveLens(e.getX());
+                } else if (armed) {
+                    float dx = e.getX() - downX;
+                    float dy = e.getY() - downY;
+                    // 还没到长按时就滑开了：按「不是长按」处理，交给系统正常滚动
+                    if (dx * dx + dy * dy > (float) touchSlop * touchSlop) disarm();
+                }
+                return true;
+
+            case MotionEvent.ACTION_UP:
+                if (lensActive) {
+                    finishLens(e.getX());
+                } else if (armed) {
+                    disarm();
+                    int idx = indexAt(e.getX());
+                    if (idx >= 0 && idx == downIndex) {
+                        Haptics.tap(this);
+                        if (idx != selected) {
+                            setSelected(idx, true);
+                            if (listener != null) listener.onTabSelected(idx);
+                        }
+                    }
+                }
+                return true;
+
+            case MotionEvent.ACTION_CANCEL:
+                if (lensActive) cancelLens();
+                else disarm();
+                return true;
+
+            default:
+                return true;
+        }
+    }
+
+    private void arm(float x, float y) {
+        downX = x;
+        downY = y;
+        downIndex = indexAt(x);
+        selectedBefore = selected;
+        armed = downIndex >= 0;
+        if (!armed) return;
+        items[downIndex].setPressed(true);
+        // 波纹从手指位置扩散，而不是默认的控件中心
+        Drawable bg = items[downIndex].getBackground();
+        if (bg instanceof RippleDrawable) {
+            bg.setHotspot(x - items[downIndex].getLeft(), y - items[downIndex].getTop());
+        }
+        // 长按要 320ms 才触发，这段时间足够把玻璃备好
+        if (lens != null) lens.prepare();
+        postDelayed(longPress, LONG_PRESS_MS);
+    }
+
+    private void disarm() {
+        armed = false;
+        removeCallbacks(longPress);
+        clearPressed();
+    }
+
+    private void clearPressed() {
+        for (LinearLayout item : items) {
+            if (item != null) item.setPressed(false);
+        }
+    }
+
+    private void startLens(int idx) {
+        if (lens == null || lensActive) return;
+        clearPressed();
+        lensActive = true;
+        lensIndex = idx;
+        hiddenPill = idx;
+        setSelected(idx, true);
+        Haptics.buzz(getContext());
+        lens.show(tabIcons[idx], centerXOf(idx), pillCenterY());
+    }
+
+    private void moveLens(float x) {
+        int idx = indexAt(x);
+        if (idx >= 0 && idx != lensIndex) {
+            lensIndex = idx;
+            hiddenPill = idx;
+            Haptics.tap(this);
+            setSelected(idx, true);
+        }
+        if (lens != null) lens.moveTo(clampX(x));
+    }
+
+    private void finishLens(float x) {
+        int hit = indexAt(x);
+        final int target = hit < 0 ? Math.max(0, lensIndex) : hit;
+        lensActive = false;
+        moveTo(target, () -> {
+            if (listener != null) listener.onTabSelected(target);
+        });
+    }
+
+    private void cancelLens() {
+        lensActive = false;
+        moveTo(selectedBefore < 0 ? 0 : selectedBefore, null);
+    }
+
+    /** 圆镜缩回目标项：缩完那一刻它已经长成药丸，这里再交还给药丸，切换零跳变 */
+    private void moveTo(int idx, final Runnable after) {
+        if (lens == null) {
+            restoreAfterLens(idx);
+            if (after != null) after.run();
+            return;
+        }
+        lens.release(centerXOf(idx), () -> {
+            restoreAfterLens(idx);
+            if (after != null) after.run();
+        });
+    }
+
+    private void restoreAfterLens(int idx) {
+        hiddenPill = -1;
+        lensIndex = -1;
+        setSelected(idx, false);
+    }
+
+    /** 栏内坐标：第 i 项的中心 x（栏与圆镜同属一个父容器，坐标系一致） */
+    private float centerXOf(int i) {
+        float itemW = getWidth() / (float) Math.max(1, pills.length);
+        return getLeft() + itemW * (i + 0.5f);
+    }
+
+    /** 药丸中线在父容器里的 y（bar 顶 + item 顶 + slot 顶 + 半高，逐层累加） */
+    private float pillCenterY() {
+        if (items[0] == null || slots[0] == null) return getTop();
+        return getTop() + items[0].getTop() + slots[0].getTop() + slots[0].getHeight() / 2f;
+    }
+
+    /** 圆镜的横向范围：与库的行为一致，夹在首尾 tab 中心之间 */
+    float clampX(float x) {
+        if (pills.length == 0) return x;
+        float lo = centerXOf(0);
+        float hi = centerXOf(pills.length - 1);
+        return x < lo ? lo : (x > hi ? hi : x);
+    }
+
+    /** 手指落在第几项（越界返回 -1） */
+    private int indexAt(float x) {
+        int wd = getWidth();
+        if (wd <= 0) return -1;
+        int n = pills.length;
+        float rel = x - getPaddingLeft();
+        if (rel < 0 || rel >= wd) return -1;
+        int idx = (int) (rel / (wd / (float) n));
+        return idx < 0 ? 0 : (idx >= n ? n - 1 : idx);
     }
 }

@@ -81,6 +81,19 @@ final class Wds {
     /** 内容底部留白(dp)：64 栏高 + 12 底边距 + 12 呼吸 + 8 余量 */
     static final int NAV_INSET = 96;
 
+    // ---------------- 1.1c 放大镜令牌（长按底栏浮起的圆镜） ----------------
+
+    /** 镜内着色：比栏身的 42% 更深，图标压在上面才立得住 */
+    static final int LENS_TINT = 0x520B151C;
+    /** 镜下柔影（浮起感） */
+    static final int LENS_SHADOW = 0x4D000000;
+    /** 镜缘常色 */
+    static final int LENS_RIM = 0x59FFFFFF;
+    /** 镜缘顶部那道高光弧 */
+    static final int LENS_SPEC = 0xD9FFFFFF;
+    /** 镜内高光渐变起点 */
+    static final int LENS_HI_TOP = 0x33FFFFFF;
+
     // ---------------- 1.2 字体阶梯 ----------------
 
     static final float SP_HERO = 32f;
