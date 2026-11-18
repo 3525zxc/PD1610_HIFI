@@ -16,7 +16,7 @@ RELEASES = [
 
 ### 本轮新增
 - **三页框架**：状态 / 调节 / 关于，纯 Java + 原生 View 代码构建 UI（无 XML 布局、无第三方依赖）
-- **HAL 参数下发**：反射调用 `AudioManager.setParameters()`（@hide API），实时切换无需重启
+- **HAL 参数下发**：反射调用 `AudioManager.setParameters()`（`@hide` API），实时切换无需重启
 - **模式切换**：Off / HiFi / DSD 三档
 - **DSD 音量滑块**：0–31（官方默认 19）
 - **I2S 时钟档位**：`hifi_i2s_clock_rate` 调节入口
