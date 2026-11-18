@@ -113,13 +113,16 @@ public final class MainActivity extends Activity {
         // 长按浮起的放大镜：与栏同级、盖在栏之上。自身不可点，触摸事件穿透给它下面的栏
         lensView = new GlassLens(this, w);
         root.addView(lensView, new FrameLayout.LayoutParams(-1, -1));
+        // 必须比栏的 elevation(10dp) 高：FrameLayout 在硬件渲染下按 Z 序合成子 View，
+        // 否则整条栏会盖在镜子上面，只在栏顶上露出一小段。镜子没有背景/outline，
+        // 这点 elevation 不会产生投影，只用来定层序。
+        lensView.setElevation(w.dpf(BAR_ELEVATION + 6));
         glassBar.attachLens(lensView);
 
         setContentView(root);
 
         // 让栏知道去模糊谁，并在任意 pane 滚动时补快照
         glassBar.attachContent(content);
-        lensView.attachSource(content);
         watchScroll(content);
 
         controlPage.modePanel().setStatusListener(this::onModeStatus);
@@ -324,6 +327,13 @@ public final class MainActivity extends Activity {
             return;
         }
         super.onBackPressed();
+    }
+
+    @Override
+    protected void onStop() {
+        // 退到后台时手势一定会断，这里主动收尾：否则药丸会保持 hidden 状态
+        if (glassBar != null) glassBar.abortGesture();
+        super.onStop();
     }
 
     @Override

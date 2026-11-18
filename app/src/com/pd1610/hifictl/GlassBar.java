@@ -68,11 +68,9 @@ final class GlassBar extends LinearLayout {
     private final float strokeW;
 
     private final LinearLayout[] items;
-    private final FrameLayout[] slots;
     private final FrameLayout[] pills;
     private final Icons.Icon[] icons;
     private final TextView[] labels;
-    private final int[] tabIcons;
     private final Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Paint shaderPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final RectF rect = new RectF();
@@ -145,11 +143,9 @@ final class GlassBar extends LinearLayout {
 
         int n = names.length;
         items = new LinearLayout[n];
-        slots = new FrameLayout[n];
         pills = new FrameLayout[n];
         icons = new Icons.Icon[n];
         labels = new TextView[n];
-        tabIcons = iconIds;
 
         for (int i = 0; i < n; i++) {
             LinearLayout item = new LinearLayout(c);
@@ -184,7 +180,6 @@ final class GlassBar extends LinearLayout {
             addView(item, new LinearLayout.LayoutParams(0, -1, 1f));
 
             items[i] = item;
-            slots[i] = slot;
             pills[i] = pill;
             icons[i] = icon;
             labels[i] = label;
@@ -415,10 +410,8 @@ final class GlassBar extends LinearLayout {
             }
             int color = sel ? Wds.GLASS_ACCENT : Wds.GLASS_IDLE;
             icons[i].setColor(color);
-            // 图标与文字都让位：镜子正罩在这一项上，两套东西会打架
-            icons[i].setAlpha(hidden ? 0f : 1f);
             labels[i].setTextColor(color);
-            labels[i].setAlpha(hidden ? 0f : 1f);
+            // 图标与文字**不**让位：镜子只是玻璃，底下的 tab 该怎样还怎样
         }
     }
 
@@ -430,6 +423,8 @@ final class GlassBar extends LinearLayout {
     public boolean onTouchEvent(MotionEvent e) {
         switch (e.getActionMasked()) {
             case MotionEvent.ACTION_DOWN:
+                // 上一轮如果没收到 UP/CANCEL（被系统截走），先收干净再开新的
+                if (lensActive) abortGesture();
                 arm(e.getX(), e.getY());
                 return true;
 
@@ -445,10 +440,12 @@ final class GlassBar extends LinearLayout {
                 return true;
 
             case MotionEvent.ACTION_UP:
+                removeCallbacks(longPress);
+                armed = false;
+                clearPressed();
                 if (lensActive) {
                     finishLens(e.getX());
-                } else if (armed) {
-                    disarm();
+                } else {
                     int idx = indexAt(e.getX());
                     if (idx >= 0 && idx == downIndex) {
                         Haptics.tap(this);
@@ -483,8 +480,6 @@ final class GlassBar extends LinearLayout {
         if (bg instanceof RippleDrawable) {
             bg.setHotspot(x - items[downIndex].getLeft(), y - items[downIndex].getTop());
         }
-        // 长按要 320ms 才触发，这段时间足够把玻璃备好
-        if (lens != null) lens.prepare();
         postDelayed(longPress, LONG_PRESS_MS);
     }
 
@@ -508,7 +503,7 @@ final class GlassBar extends LinearLayout {
         hiddenPill = idx;
         setSelected(idx, true);
         Haptics.buzz(getContext());
-        lens.show(tabIcons[idx], centerXOf(idx), pillCenterY());
+        lens.show(centerXOf(idx), barCenterY());
     }
 
     private void moveLens(float x) {
@@ -519,52 +514,61 @@ final class GlassBar extends LinearLayout {
             Haptics.tap(this);
             setSelected(idx, true);
         }
-        if (lens != null) lens.moveTo(clampX(x));
+        // x 是栏内坐标，圆镜与栏同级，要补上栏在父容器里的左边距再夹取
+        if (lens != null) lens.moveTo(clampX(x + getLeft()));
     }
 
+    /**
+     * 松手落位：药丸与页面**立即**归位，镜子自己缩回去淡出。
+     * 不等镜子的动画回调 —— 否则缩放期间再点一下，迟到的回调会把高亮拉回旧格子。
+     */
     private void finishLens(float x) {
         int hit = indexAt(x);
-        final int target = hit < 0 ? Math.max(0, lensIndex) : hit;
+        int target = hit < 0 ? Math.max(0, lensIndex) : hit;
         lensActive = false;
-        moveTo(target, () -> {
-            if (listener != null) listener.onTabSelected(target);
-        });
-    }
-
-    private void cancelLens() {
-        lensActive = false;
-        moveTo(selectedBefore < 0 ? 0 : selectedBefore, null);
-    }
-
-    /** 圆镜缩回目标项：缩完那一刻它已经长成药丸，这里再交还给药丸，切换零跳变 */
-    private void moveTo(int idx, final Runnable after) {
-        if (lens == null) {
-            restoreAfterLens(idx);
-            if (after != null) after.run();
-            return;
-        }
-        lens.release(centerXOf(idx), () -> {
-            restoreAfterLens(idx);
-            if (after != null) after.run();
-        });
-    }
-
-    private void restoreAfterLens(int idx) {
-        hiddenPill = -1;
         lensIndex = -1;
-        setSelected(idx, false);
+        hiddenPill = -1;
+        setSelected(target, false);
+        if (lens != null) lens.release(centerXOf(target));
+        if (listener != null) listener.onTabSelected(target);
+    }
+
+    /** 手势被系统取消：回到手势开始前的那一项，不切页 */
+    private void cancelLens() {
+        int back = selectedBefore < 0 ? selected : selectedBefore;
+        lensActive = false;
+        lensIndex = -1;
+        hiddenPill = -1;
+        setSelected(back, false);
+        if (lens != null) lens.release(centerXOf(back));
+    }
+
+    /**
+     * 强行收尾：Activity 退到后台、或收到新的 DOWN 而上一轮没结束时调用。
+     * 必须把 hiddenPill / lensActive 清掉，否则药丸会永久隐身。
+     */
+    void abortGesture() {
+        armed = false;
+        removeCallbacks(longPress);
+        clearPressed();
+        if (lensActive) {
+            lensActive = false;
+            lensIndex = -1;
+            hiddenPill = -1;
+            setSelected(selectedBefore < 0 ? selected : selectedBefore, false);
+        }
+        if (lens != null) lens.releaseAll();
     }
 
     /** 栏内坐标：第 i 项的中心 x（栏与圆镜同属一个父容器，坐标系一致） */
     private float centerXOf(int i) {
         float itemW = getWidth() / (float) Math.max(1, pills.length);
-        return getLeft() + itemW * (i + 0.5f);
+        return getLeft() + getPaddingLeft() + itemW * (i + 0.5f);
     }
 
-    /** 药丸中线在父容器里的 y（bar 顶 + item 顶 + slot 顶 + 半高，逐层累加） */
-    private float pillCenterY() {
-        if (items[0] == null || slots[0] == null) return getTop();
-        return getTop() + items[0].getTop() + slots[0].getTop() + slots[0].getHeight() / 2f;
+    /** 栏的垂直中线：圆镜静止直径 = 栏高，圆心落在中线才"等高等大" */
+    private float barCenterY() {
+        return getTop() + getHeight() / 2f;
     }
 
     /** 圆镜的横向范围：与库的行为一致，夹在首尾 tab 中心之间 */

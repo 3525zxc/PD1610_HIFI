@@ -84,7 +84,7 @@ final class Wds {
     // ---------------- 1.1c 放大镜令牌（长按底栏浮起的圆镜） ----------------
 
     /** 镜内着色：比栏身的 42% 更深，图标压在上面才立得住 */
-    static final int LENS_TINT = 0x520B151C;
+    static final int LENS_TINT = 0x0D000000;
     /** 镜下柔影（浮起感） */
     static final int LENS_SHADOW = 0x4D000000;
     /** 镜缘常色 */
@@ -92,7 +92,9 @@ final class Wds {
     /** 镜缘顶部那道高光弧 */
     static final int LENS_SPEC = 0xD9FFFFFF;
     /** 镜内高光渐变起点 */
-    static final int LENS_HI_TOP = 0x33FFFFFF;
+    static final int LENS_HI_TOP = 0x12FFFFFF;
+    /** 镜内底部内阴影（玻璃厚度） */
+    static final int LENS_INNER = 0x1C000000;
 
     // ---------------- 1.2 字体阶梯 ----------------
 
