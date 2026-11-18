@@ -1,7 +1,7 @@
 # HifiCtl · HIFI Controller for PD1610
 
 > HIFI tuning tool for vivo Xplay6 (PD1610) on LineageOS 16 / Android 9.
-> Evolved from v1.0 to v2.5.3. Pure Java + native Views, no third-party dependencies,
+> Evolved from v1.0 to v2.5.4-glass. Pure Java + native Views, no third-party dependencies,
 > no system partition modification, no flashing required.
 
 [简体中文 ←](README.md)
@@ -42,7 +42,8 @@ Signed builds from each stage are in `apk/`, ready to install:
 
 | Version | File | Notes |
 |---|---|---|
-| **v2.5.3** (recommended) | `apk/HifiCtl-v2.5.3.apk` | current: tuning mode + DSD memory + working in-app update, versionCode 12 |
+| **v2.5.4-glass** (recommended) | `apk/HifiCtl-v2.5.4-glass.apk` | current: floating liquid-glass bar + long-press magnifier; tuning mode / DSD memory / in-app update retained, versionCode 14 |
+| v2.5.3 | `apk/HifiCtl-v2.5.3.apk` | flat-bar stable build: tuning mode + DSD memory + working in-app update, versionCode 12 |
 | v2.5 | `apk/HifiCtl-v2.5.apk` | audio tuning mode + DSD memory, versionCode 9 |
 | v2.4 | `apk/HifiCtl-v2.4.apk` | in-app update checker, versionCode 8 |
 | v2.3 | `apk/HifiCtl-v2.3.apk` | four tabs + haptics + credits, versionCode 7 |
@@ -51,8 +52,11 @@ Signed builds from each stage are in `apk/`, ready to install:
 | v1.0 | `apk/HifiCtl-v1.0.apk` | initial, parameter names guessed from `strings` (outdated) |
 
 ```bash
-adb install -r apk/HifiCtl-v2.5.3.apk
+adb install -r apk/HifiCtl-v2.5.4-glass.apk
 ```
+
+> The glass variant disables automatic update checks and the update dot, so this internal build
+> is not prompted to "upgrade back" to the flat-bar release. Manual check from the top-right entry still works.
 
 ## Requirements & permissions
 
@@ -117,6 +121,7 @@ debug key, password `android`, development use only).
 | v2.0 | 11-17 22:00 | full rewrite: Wupp/WhatsApp dark theme, four tabs, haptics, confirm sheet, serialized HAL writes |
 | v2.3 | 11-17 22:28 | about-page credits and avatars |
 | v2.4 | 11-17 23:40 | in-app updates: local (in-panel download progress + root silent install) / browser (open releases); top-right check-frequency setting (daily default, off / every launch); downgrade guard |
+| v2.5.4-glass | 11-18 11:02 | floating liquid-glass bottom bar (blurred backdrop + pill indicator + long-press magnifier), business layer unchanged; auto update check disabled to avoid prompting an upgrade back to the flat release, versionCode 14 |
 | v2.5 | 11-18 00:13 | audio tuning mode on the control page (RX HPH Mode: stock low-power CLS_H_LP / high-fidelity CLS_H_HIFI, takes effect instantly, restored at boot via Magisk service.d); fixed DSD falling back to HiFi after restart (remembers the last mode and labels it honestly) |
 
 ## Known limitations

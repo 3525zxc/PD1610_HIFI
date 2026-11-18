@@ -1,7 +1,7 @@
 # HifiCtl · PD1610 HIFI 控制器
 
 > vivo Xplay6 (PD1610) / LineageOS 16 / Android 9 上的 HIFI 音效调节工具。
-> 从 v1.0 一路迭代到 v2.3，纯 Java + 原生 View，无第三方依赖、不改系统分区、不刷机。
+> 从 v1.0 一路迭代到 v2.5.4-glass，纯 Java + 原生 View，无第三方依赖、不改系统分区、不刷机。
 
 [English ↓](#english)
 
@@ -35,7 +35,8 @@
 
 | 版本 | 文件 | 说明 |
 |---|---|---|
-| **v2.5.3**（推荐） | `apk/HifiCtl-v2.5.3.apk` | 当前版：音质档 + DSD 记忆 + 可用的应用内更新，versionCode 12 |
+| **v2.5.4-glass**（推荐） | `apk/HifiCtl-v2.5.4-glass.apk` | 当前版：液态玻璃悬浮底栏 + 长按放大透镜，保留音质档 / DSD 记忆 / 应用内更新，versionCode 14 |
+| v2.5.3 | `apk/HifiCtl-v2.5.3.apk` | 平面底栏稳定版：音质档 + DSD 记忆 + 可用的应用内更新，versionCode 12 |
 | v2.5.2 | `apk/HifiCtl-v2.5.2.apk` | 同 v2.5.3（去调试日志前），versionCode 11 |
 | v2.5.1 | `apk/HifiCtl-v2.5.1.apk` | 修复更新面板按钮，versionCode 10 |
 | v2.5 | `apk/HifiCtl-v2.5.apk` | 音质档 + DSD 记忆，versionCode 9 |
@@ -46,8 +47,10 @@
 | v1.0 | `apk/HifiCtl-v1.0.apk` | 初版，参数名按 `strings` 推断（已过时） |
 
 ```bash
-adb install -r apk/HifiCtl-v2.5.3.apk
+adb install -r apk/HifiCtl-v2.5.4-glass.apk
 ```
+
+> glass 变体关闭了自动更新检查与更新红点（内部验证版不会被提示升级回正式版），仍可从右上角入口手动检查。
 
 ## 权限与前提
 
@@ -106,6 +109,7 @@ adb install -r out/HifiCtl.apk
 | v2.0 | 11-17 22:00 | 整体重构：Wupp/WhatsApp 深色系、四页签、触感可调、确认层、HAL 写串行化 |
 | v2.3 | 11-17 22:28 | 完善关于页致谢与头像 |
 | v2.4 | 11-17 23:40 | 关于页新增「版本更新」：本地更新（面板内下载进度 + root 静默安装）/ 浏览器更新（打开发布页）；右上角可设检查频率（默认每日一次，可关闭 / 每次打开）；降级保护 |
+| v2.5.4-glass | 11-18 11:02 | 液态玻璃悬浮底栏（模糊背板 + 胶囊指示器 + 长按放大透镜），业务层不变；关闭自动更新检查避免提示升级回正式版，versionCode 14 |
 | v2.5.3 | 11-18 00:32 | 修复应用内自动安装（setsid 独立会话，避免安装本 APP 时进程被杀导致中断）；本地更新走 api.github.com |
 | v2.5.2 | 11-18 00:28 | 合并 v2.5/v2.5.1 修复的正式版 |
 | v2.5.1 | 11-18 00:25 | 修复更新面板按钮 0 宽点不到；下载改走 API asset 接口 |
@@ -144,10 +148,11 @@ DSD is **not** a parameter toggle: it is triggered by the output stream's own fo
 Java `AudioTrack` rejects DSD encoding, so the app never falsely reports DSD as active.
 
 **Build:** `export ANDROID_SDK=/path/to/sdk && bash build.sh`. No Gradle/Kotlin/AndroidX.
-**Install:** `adb install -r apk/HifiCtl-v2.3.apk` (prebuilt, signed with the bundled debug key).
+**Install:** `adb install -r apk/HifiCtl-v2.5.4-glass.apk` (prebuilt, signed with the bundled debug key).
 
 **Versions:** v1.0 (initial, wrong parameter) → v1.1-glass (correct `enable_hifi`, glass UI)
-→ v1.2 (GLES, deprecated/crashes) → v2.0 (Wupp-style rewrite, four tabs) → **v2.3 (current)**.
+→ v1.2 (GLES, deprecated/crashes) → v2.0 (Wupp-style rewrite, four tabs) → v2.4 (in-app updates)
+→ v2.5 (tuning mode + DSD memory) → v2.5.3 (silent install fix) → **v2.5.4-glass (current)**.
 
 See [docs/01](docs/01_实测结论_HAL参数.md) for the full parameter investigation,
 [docs/02](docs/02_UI设计规范_v20.md) for the design system.
