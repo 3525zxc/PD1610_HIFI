@@ -124,6 +124,10 @@ adb install -r out/HifiCtl.apk
 5. **两版原厂固件的 HIFI 通路参数逐字节相同**（差异只是 MultiMedia3→8 等平台通路编号），不存在"两版调音"；能改变听感的是控制页「音质档」的耳放工作模式。
 6. 音质档依赖 Magisk 模块提供的 `tinymix`（`/data/adb/modules/audio_pd1610/tinymix`）；高保真档耗电略高。
 
+## 致谢
+
+- [AlexIllinois2](https://github.com/AlexIllinois2) — 共同 Contributor。本项目的 HIFI 通路与参数移植方案源自其 [xplay6-tmproot](https://github.com/AlexIllinois2/xplay6-tmproot) 仓库；v1.0 至 v2.5.4-glass 全部 Release 发布页亦标注该致谢。
+
 ## 许可
 
 代码 Apache-2.0；致谢头像与昵称版权归各自作者，仅在本 APP 关于页展示使用。

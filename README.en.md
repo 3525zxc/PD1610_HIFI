@@ -134,6 +134,12 @@ debug key, password `android`, development use only).
    comparison, or "louder" gets mistaken for "better".
 4. Restart playback after switching HIFI for it to take effect.
 
+## Credits
+
+- [AlexIllinois2](https://github.com/AlexIllinois2) — co-contributor. The HIFI path and
+  parameter porting approach came from [xplay6-tmproot](https://github.com/AlexIllinois2/xplay6-tmproot);
+  every release page from v1.0 to v2.5.4-glass carries this credit.
+
 ## License
 
 Code: Apache-2.0. Credit avatars and nicknames belong to their respective owners,
